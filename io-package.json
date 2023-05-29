@@ -1,0 +1,159 @@
+{
+    "common": {
+        "name": "jvc_dila",
+        "version": "0.0.1",
+        "news": {
+            "0.0.1": {
+                "en": "initial release",
+                "de": "Erstveröffentlichung",
+                "ru": "Начальная версия",
+                "pt": "lançamento inicial",
+                "nl": "Eerste uitgave",
+                "fr": "Première version",
+                "it": "Versione iniziale",
+                "es": "Versión inicial",
+                "pl": "Pierwsze wydanie",
+                "zh-cn": "首次出版"
+            }
+        },
+        "title": "JVC D-ILA projector",
+        "titleLang": {
+            "en": "JVC D-ILA projector",
+            "de": "JVC D-ILA-Projektor",
+            "ru": "проектор JVC D-ILA",
+            "pt": "Projetor JVC D-ILA",
+            "nl": "JVC D-ILA-projector",
+            "fr": "Projecteur JVC D-ILA",
+            "it": "Proiettore JVC D-ILA",
+            "es": "Proyector JVC D-ILA",
+            "pl": "Projektor JVC D-ILA",
+            "zh-cn": "JVC D-ILA投影机"
+        },
+        "desc": {
+            "en": "JVC D-ILA projector adapter to control JVC projectors like RSx000, Nx, NZx, etc.",
+            "de": "JVC D-ILA Projektoradapter zur Steuerung von JVC Projektoren wie RSx000, Nx, NZx, etc.",
+            "ru": "Адаптер проектора JVC D-ILA для управления проекторами JVC, такими как RSx000, Nx, NZx и т. д.",
+            "pt": "Adaptador de projetor JVC D-ILA para controlar projetores JVC como RSx000, Nx, NZx, etc.",
+            "nl": "JVC D-ILA-projectoradapter om JVC-projectoren zoals RSx000, Nx, NZx, enz.",
+            "fr": "Adaptateur de projecteur JVC D-ILA pour contrôler les projecteurs JVC tels que RSx000, Nx, NZx, etc.",
+            "it": "Adattatore per proiettore JVC D-ILA per controllare proiettori JVC come RSx000, Nx, NZx, ecc.",
+            "es": "Adaptador de proyector JVC D-ILA para controlar proyectores JVC como RSx000, Nx, NZx, etc.",
+            "pl": "Adapter projektora JVC D-ILA do sterowania projektorami JVC, takimi jak RSx000, Nx, NZx itp.",
+            "zh-cn": "JVC D-ILA 投影仪适配器，用于控制 JVC 投影仪，如 RSx000、Nx、NZx 等。"
+        },
+        "authors": [
+            "Volker Richert <volker@richert.nrw>"
+        ],
+        "keywords": [
+            "jvc",
+            "projector",
+            "dila",
+            "d-ila"
+        ],
+        "license": "MIT",
+        "platform": "Javascript/Node.js",
+        "main": "build/main.js",
+        "icon": "jvc_dila.png",
+        "enabled": true,
+        "extIcon": "https://raw.githubusercontent.com/volkerrichert/ioBroker.jvc_dila/main/admin/jvc_dila.png",
+        "readme": "https://github.com/volkerrichert/ioBroker.jvc_dila/blob/main/README.md",
+        "loglevel": "info",
+        "mode": "daemon",
+        "type": "multimedia",
+        "compact": true,
+        "connectionType": "local",
+        "dataSource": "poll",
+        "adminUI": {
+            "config": "json"
+        },
+        "dependencies": [
+            {
+                "js-controller": ">=3.3.22"
+            }
+        ],
+        "globalDependencies": [
+            {
+                "admin": ">=5.1.13"
+            }
+        ]
+    },
+    "native": {
+        "ip": "",
+        "port": 20554
+    },
+    "objects": [],
+    "instanceObjects": [
+        {
+            "_id": "on",
+            "type": "state",
+            "common": {
+                "name": "on",
+                "type": "boolean",
+                "read": true,
+                "write": true,
+                "def": false
+            },
+            "native": {}
+        },
+        {
+            "_id": "state",
+            "type": "state",
+            "common": {
+                "name": {
+                    "en": "power state"
+                },
+                "type": "string",
+                "states": { "0":  "StandBy", "1":  "On", "2": "Cooling", "3":  "Reserved", "4":  "Emergency"},
+                "read": true,
+                "write": false,
+                "def": 0
+            },
+            "native": {}
+        },
+        {
+            "_id": "info",
+            "type": "channel",
+            "common": {
+                "name": {
+                    "en": "Information",
+                    "de": "Information",
+                    "ru": "Информация",
+                    "pt": "Em formação",
+                    "nl": "Informatie",
+                    "fr": "Informations",
+                    "it": "Informazione",
+                    "es": "Información",
+                    "pl": "Informacja",
+                    "uk": "Інформація",
+                    "zh-cn": "信息"
+                }
+            },
+            "native": {}
+        },
+        {
+            "_id": "info.connection",
+            "type": "state",
+            "common": {
+                "name": {
+                    "en": "Connected to projector",
+                    "de": "Verbindung mit projector",
+                    "ru": "При подключении к projector",
+                    "pt": "Se conectado ao projector",
+                    "nl": "Indien verbonden met projector",
+                    "fr": "Si connecté à projector",
+                    "it": "Se connesso a projector",
+                    "es": "Si está conectado a projector",
+                    "pl": "W przypadku połączenia z projector",
+                    "uk": "Підключення до projector",
+                    "zh-cn": "如果连接到 projector"
+                },
+                "type": "boolean",
+                "role": "indicator.reachable",
+                "read": true,
+                "write": false,
+                "def": false
+            },
+            "native": {}
+        }
+    ]
+}

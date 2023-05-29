@@ -1,0 +1,18 @@
+{
+    "i18n": true,
+    "type": "panel",
+    "items": {
+        "ip": {
+            "type": "text",
+            "label": "IP/Name of JVC projector",
+            "newLine": false,
+            "default": ""
+        },
+        "port": {
+            "type": "number",
+            "label": "port",
+            "newLine": true,
+            "default": 20554
+        }
+    }
+}
