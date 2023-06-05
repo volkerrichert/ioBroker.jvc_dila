@@ -92,12 +92,12 @@ class JVC extends import_events.EventEmitter {
     if (d.length === 0) {
       return;
     }
-    this.logger.debug("received " + d.toString("hex"));
+    this.logger.silly("received " + d.toString("hex"));
     if (!this.acked) {
       const str = d.toString("utf8");
       debugger;
       if (str.startsWith("PJ_OK")) {
-        this.logger.info("received PJ_OK");
+        this.logger.silly("received PJ_OK");
         (_a = this.socket) == null ? void 0 : _a.write(Buffer.from("PJREQ"));
       } else if (str.startsWith("PJACK")) {
         this.acked = true;
@@ -105,7 +105,7 @@ class JVC extends import_events.EventEmitter {
         this.emit("ready");
         this.interval = (0, import_timers.setInterval)(this.checkWorking.bind(this), 1e3);
       } else if (str.startsWith("PJNAK")) {
-        this.logger.info("Received NAK");
+        this.logger.silly("Received NAK");
       }
       if (d.length > 5) {
         this.received(d.slice(5));
@@ -115,7 +115,7 @@ class JVC extends import_events.EventEmitter {
       delete this.partial;
       const endOf = fullMessage.indexOf(10);
       if (endOf < 0) {
-        this.logger.info(`Partial message received: ${fullMessage.toString("hex")}`);
+        this.logger.silly(`Partial message received: ${fullMessage.toString("hex")}`);
         this.partial = fullMessage;
       } else {
         const thisMessage = fullMessage.slice(0, endOf);
@@ -132,7 +132,7 @@ class JVC extends import_events.EventEmitter {
       await this.connect();
     }
     this.working = true;
-    this.logger.debug(`sending ${d.toString("hex")}`);
+    this.logger.silly(`sending ${d.toString("hex")}`);
     (_a = this.socket) == null ? void 0 : _a.write(d);
   }
   messageReceived(message) {

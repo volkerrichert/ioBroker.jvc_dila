@@ -68,12 +68,12 @@ export class JVC extends EventEmitter {
         if (d.length === 0) {
             return;
         }
-        this.logger.debug('received ' + d.toString('hex'))
+        this.logger.silly('received ' + d.toString('hex'))
         if (!this.acked) {
             const str = d.toString('utf8');
             debugger;
             if (str.startsWith('PJ_OK')) {
-                this.logger.info('received PJ_OK')
+                this.logger.silly('received PJ_OK')
                 this.socket?.write(Buffer.from('PJREQ'));
             } else if (str.startsWith('PJACK')) {
                 this.acked = true;
@@ -81,7 +81,7 @@ export class JVC extends EventEmitter {
                 this.emit('ready');
                 this.interval = setInterval(this.checkWorking.bind(this), 1000);
             } else if (str.startsWith('PJNAK')) {
-                this.logger.info('Received NAK');
+                this.logger.silly('Received NAK');
             }
             if (d.length > 5) {
                 this.received(d.slice(5));
@@ -91,7 +91,7 @@ export class JVC extends EventEmitter {
             delete this.partial;
             const endOf = fullMessage.indexOf(0x0A);
             if (endOf < 0) {
-                this.logger.info(`Partial message received: ${fullMessage.toString('hex')}`);
+                this.logger.silly(`Partial message received: ${fullMessage.toString('hex')}`);
                 this.partial = fullMessage;
             } else {
                 const thisMessage = fullMessage.slice(0, endOf);
@@ -108,7 +108,7 @@ export class JVC extends EventEmitter {
             await this.connect();
         }
         this.working = true;
-        this.logger.debug(`sending ${d.toString('hex')}`)
+        this.logger.silly(`sending ${d.toString('hex')}`)
         this.socket?.write(d);
     }
 

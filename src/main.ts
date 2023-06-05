@@ -5,6 +5,7 @@
 // The adapter-core module gives you access to the core ioBroker functions
 // you need to create an adapter
 import * as utils from '@iobroker/adapter-core';
+import { error } from '@iobroker/adapter-dev/build/util';
 
 // @ts-ignore: no TS definition
 import { JVC } from './lib/JVC';
@@ -59,7 +60,7 @@ class JvcDila extends utils.Adapter {
             this.clearTimeout(this.timeout);
             delete this.timeout;
         }
-        this.log.info('projector connected');
+        this.log.debug('projector connected');
     }
     private onProjectorDisconnected() {
         this.setState('info.connection', {val: false, ack: true});
@@ -71,7 +72,11 @@ class JvcDila extends utils.Adapter {
     }
 
     private onProjectorError(e: any) {
-        this.log.error(`connection error ${e}`);
+        if (e.code === 'ENETUNREACH') {
+            this.log.silly(`unable to connect to ${e.address}`);
+        } else {
+            this.log.error(`connection error ${e}`);
+        }
     }
 
     private onProjectorReady() {
@@ -79,8 +84,9 @@ class JvcDila extends utils.Adapter {
         this.interval = this.setInterval(this.updater.bind(this), 5000);
     }
     private onAck(state: string) {
-        this.log.debug(`ack for ${Buffer.from(state).toString('hex')} received`);
+        this.log.silly(`ack for ${Buffer.from(state).toString('hex')} received`);
     }
+
     private onResponse(state: string, value: string) {
         switch (state) {
             case POWER.command:
@@ -88,7 +94,7 @@ class JvcDila extends utils.Adapter {
                 this.setState('on', value === '1', true);
                 break;
         }
-        this.log.info(`response for ${state} received: ${value}`);
+        this.log.debug(`response for ${state} received: ${value}`);
     }
     private onUnknown() {
         this.log.error('unable to handle response from projector')
@@ -185,14 +191,6 @@ class JvcDila extends utils.Adapter {
 
     private updater() {
         this.projector?.requestReference(POWER.command)
-        // this.projector?.requestReference(POWER.command)
-        // this.projector?.requestReference(POWER.command)
-        //
-        // this.projector?.requestReference(Buffer.from('IP'))
-        this.projector?.requestReference('INM1');
-        //this.projector?.requestReference('INIS');
-        //this.projector?.requestReference(Buffer.from('INM1'))
-        // this.projector?.requestReference(POWER.command)
     }
 
     private removeNamespace(id: string) {

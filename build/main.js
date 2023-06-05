@@ -56,7 +56,7 @@ class JvcDila extends utils.Adapter {
       this.clearTimeout(this.timeout);
       delete this.timeout;
     }
-    this.log.info("projector connected");
+    this.log.debug("projector connected");
   }
   onProjectorDisconnected() {
     this.setState("info.connection", { val: false, ack: true });
@@ -67,14 +67,18 @@ class JvcDila extends utils.Adapter {
     this.log.info("projector disconnected. starting reconnection");
   }
   onProjectorError(e) {
-    this.log.error(`connection error ${e}`);
+    if (e.code === "ENETUNREACH") {
+      this.log.silly(`unable to connect to ${e.address}`);
+    } else {
+      this.log.error(`connection error ${e}`);
+    }
   }
   onProjectorReady() {
     this.log.info("projector is ready");
     this.interval = this.setInterval(this.updater.bind(this), 5e3);
   }
   onAck(state) {
-    this.log.debug(`ack for ${Buffer.from(state).toString("hex")} received`);
+    this.log.silly(`ack for ${Buffer.from(state).toString("hex")} received`);
   }
   onResponse(state, value) {
     switch (state) {
@@ -83,7 +87,7 @@ class JvcDila extends utils.Adapter {
         this.setState("on", value === "1", true);
         break;
     }
-    this.log.info(`response for ${state} received: ${value}`);
+    this.log.debug(`response for ${state} received: ${value}`);
   }
   onUnknown() {
     this.log.error("unable to handle response from projector");
@@ -136,9 +140,8 @@ class JvcDila extends utils.Adapter {
     }
   }
   updater() {
-    var _a, _b;
+    var _a;
     (_a = this.projector) == null ? void 0 : _a.requestReference(POWER.command);
-    (_b = this.projector) == null ? void 0 : _b.requestReference("INM1");
   }
   removeNamespace(id) {
     const re = new RegExp(this.namespace + "*\\.", "g");
