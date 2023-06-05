@@ -69,7 +69,6 @@ class JVC extends import_events.EventEmitter {
   async connect() {
     this.logger.info("Try to connect to JVC projector");
     this.socket = new import_net.default.Socket();
-    this.socket.setTimeout(this.timeout);
     this.socket.on("error", (e) => {
       this.emit("error", e);
     });
