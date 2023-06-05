@@ -64,13 +64,19 @@ class JvcDila extends utils.Adapter {
     this.timeout = this.setTimeout(() => {
       this.connect();
     }, 30 * 1e3);
-    this.log.info("projector disconnected. starting reconnection");
+    this.log.info("projector disconnected.");
   }
   onProjectorError(e) {
     if (e.code === "ENETUNREACH") {
       this.log.silly(`unable to connect to ${e.address}`);
     } else {
       this.log.error(`connection error ${e}`);
+      this.setState("info.connection", { val: false, ack: true });
+      this.apiConnected = false;
+      if (this.interval)
+        this.clearInterval(this.interval);
+      if (this.timeout)
+        this.clearTimeout(this.timeout);
     }
   }
   onProjectorReady() {

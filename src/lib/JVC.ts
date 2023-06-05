@@ -24,7 +24,8 @@ export class JVC extends EventEmitter {
     constructor(
         private logger: ioBroker.Logger,
         private ip: string,
-        private port: number) {
+        private port: number,
+        private timeout: number = 30000) {
         super();
     }
 
@@ -41,15 +42,19 @@ export class JVC extends EventEmitter {
     }
 
     async connect(): Promise<void> {
-        this.logger.info('Connecting to JVC projector');
+        this.logger.info('Try to connect to JVC projector');
         this.socket = new net.Socket();
+        this.socket.setTimeout(this.timeout);
         this.socket.on('error', (e) => {
             this.emit('error', e);
         });
         this.socket.on('connect', () => {
             this.emit('connected');
         });
-
+        // this.socket.on('timeout', () => {
+        //     this.socket?.end();
+        //     this.emit('timeout');
+        // });
         this.socket.on('close', () => {
             this.socket?.removeAllListeners();
             clearInterval(this.interval);
@@ -60,7 +65,6 @@ export class JVC extends EventEmitter {
         this.socket.connect({
             host: this.ip,
             port: this.port || 20554,
-
         });
     }
 

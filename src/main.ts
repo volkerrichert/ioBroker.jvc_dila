@@ -5,7 +5,6 @@
 // The adapter-core module gives you access to the core ioBroker functions
 // you need to create an adapter
 import * as utils from '@iobroker/adapter-core';
-import { error } from '@iobroker/adapter-dev/build/util';
 
 // @ts-ignore: no TS definition
 import { JVC } from './lib/JVC';
@@ -68,7 +67,7 @@ class JvcDila extends utils.Adapter {
         this.timeout = this.setTimeout(() => {
             this.connect();
         }, 30*1000);
-        this.log.info('projector disconnected. starting reconnection');
+        this.log.info('projector disconnected.');
     }
 
     private onProjectorError(e: any) {
@@ -76,6 +75,10 @@ class JvcDila extends utils.Adapter {
             this.log.silly(`unable to connect to ${e.address}`);
         } else {
             this.log.error(`connection error ${e}`);
+            this.setState('info.connection', {val: false, ack: true});
+            this.apiConnected = false;
+            if (this.interval) this.clearInterval(this.interval);
+            if (this.timeout) this.clearTimeout(this.timeout);
         }
     }
 

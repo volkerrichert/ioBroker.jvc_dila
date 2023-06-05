@@ -31,11 +31,12 @@ var import_events = require("events");
 var import_net = __toESM(require("net"));
 var import_timers = require("timers");
 class JVC extends import_events.EventEmitter {
-  constructor(logger, ip, port) {
+  constructor(logger, ip, port, timeout = 3e4) {
     super();
     this.logger = logger;
     this.ip = ip;
     this.port = port;
+    this.timeout = timeout;
     this.working = true;
     this.requestPrefix = Buffer.from([
       63,
@@ -66,8 +67,9 @@ class JVC extends import_events.EventEmitter {
     await this.handleQueue();
   }
   async connect() {
-    this.logger.info("Connecting to JVC projector");
+    this.logger.info("Try to connect to JVC projector");
     this.socket = new import_net.default.Socket();
+    this.socket.setTimeout(this.timeout);
     this.socket.on("error", (e) => {
       this.emit("error", e);
     });
