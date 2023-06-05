@@ -103,7 +103,7 @@
                     "en": "power state"
                 },
                 "type": "string",
-                "states": { "0":  "StandBy", "1":  "On", "2": "Cooling", "3":  "Reserved", "4":  "Emergency"},
+                "states": { "0":  "StandBy", "1":  "On", "2": "Cooling", "3":  "WarmUp", "4":  "Emergency"},
                 "read": true,
                 "write": false,
                 "def": "0"

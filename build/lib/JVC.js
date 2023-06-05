@@ -37,7 +37,6 @@ class JVC extends import_events.EventEmitter {
     this.ip = ip;
     this.port = port;
     this.timeout = timeout;
-    this.working = true;
     this.requestPrefix = Buffer.from([
       63,
       137,
@@ -53,6 +52,7 @@ class JVC extends import_events.EventEmitter {
     ]);
     this.acked = false;
     this.queue = [];
+    this.checking = void 0;
   }
   async requestReference(state) {
     this.logger.debug(`request ${state}`);
@@ -71,19 +71,16 @@ class JVC extends import_events.EventEmitter {
     this.socket = new import_net.default.Socket();
     this.socket.on("error", (e) => {
       this.emit("error", e);
-    });
-    this.socket.on("connect", () => {
+    }).on("connect", () => {
       this.emit("connected");
-    });
-    this.socket.on("close", () => {
-      var _a;
+    }).on("close", () => {
+      var _a, _b;
       (_a = this.socket) == null ? void 0 : _a.removeAllListeners();
+      (_b = this.socket) == null ? void 0 : _b.destroy();
       clearInterval(this.interval);
       delete this.socket;
       this.emit("disconnected");
-    });
-    this.socket.on("data", this.received.bind(this));
-    this.socket.connect({
+    }).on("data", this.received.bind(this)).connect({
       host: this.ip,
       port: this.port || 20554
     });
@@ -102,7 +99,7 @@ class JVC extends import_events.EventEmitter {
         (_a = this.socket) == null ? void 0 : _a.write(Buffer.from("PJREQ"));
       } else if (str.startsWith("PJACK")) {
         this.acked = true;
-        this.working = false;
+        this.checking = void 0;
         this.emit("ready");
         this.interval = (0, import_timers.setInterval)(this.checkWorking.bind(this), 1e3);
       } else if (str.startsWith("PJNAK")) {
@@ -132,7 +129,6 @@ class JVC extends import_events.EventEmitter {
     if (!this.socket) {
       await this.connect();
     }
-    this.working = true;
     this.logger.silly(`sending ${d.toString("hex")}`);
     (_a = this.socket) == null ? void 0 : _a.write(d);
   }
@@ -141,7 +137,7 @@ class JVC extends import_events.EventEmitter {
     if (header === 6) {
       const operation = message.slice(3, 5).toString();
       this.emit("ack", operation, message.slice(5).toString());
-      this.working = false;
+      this.checking = void 0;
       this.handleQueue();
     } else if (header === 64) {
       this.emit("response", message.slice(3, 5).toString(), message.slice(5).toString());
@@ -153,17 +149,24 @@ class JVC extends import_events.EventEmitter {
   disconnect() {
     var _a, _b;
     this.acked = false;
-    this.working = true;
+    this.checking = void 0;
     clearInterval(this.interval);
-    (_a = this.socket) == null ? void 0 : _a.end();
-    (_b = this.socket) == null ? void 0 : _b.removeAllListeners();
+    (_a = this.socket) == null ? void 0 : _a.removeAllListeners();
+    (_b = this.socket) == null ? void 0 : _b.destroy();
     delete this.socket;
   }
   async checkWorking() {
+    var _a;
+    if (!this.checking) {
+      this.checking = Date.now();
+    } else if (this.checking + this.timeout > Date.now()) {
+      (_a = this.socket) == null ? void 0 : _a.destroy();
+      return;
+    }
     await this.write(Buffer.concat([this.setPrefix, Buffer.from([0, 0]), this.commandPostfix]));
   }
   async handleQueue() {
-    if (this.queue.length > 0 && !this.working) {
+    if (this.queue.length > 0 && !this.checking) {
       const next = this.queue.pop();
       this.logger.debug(`queue ${this.queue.length}`);
       if (next)

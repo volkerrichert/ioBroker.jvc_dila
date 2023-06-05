@@ -3,8 +3,6 @@ import net from 'net';
 import { setInterval } from 'timers';
 
 export class JVC extends EventEmitter {
-    public working = true;
-
     readonly requestPrefix = Buffer.from([
         0x3F, 0x89, 0x01,
     ]);
@@ -20,6 +18,7 @@ export class JVC extends EventEmitter {
     private partial: Buffer | undefined;
     private interval: NodeJS.Timeout | undefined;
     private queue: Buffer[] = [];
+    private checking: number | undefined = undefined;
 
     constructor(
         private logger: ioBroker.Logger,
@@ -44,28 +43,25 @@ export class JVC extends EventEmitter {
     async connect(): Promise<void> {
         this.logger.info('Try to connect to JVC projector');
         this.socket = new net.Socket();
-        //this.socket.setTimeout(this.timeout);
-        this.socket.on('error', (e) => {
-            this.emit('error', e);
-        });
-        this.socket.on('connect', () => {
-            this.emit('connected');
-        });
-        // this.socket.on('timeout', () => {
-        //     this.socket?.end();
-        //     this.emit('timeout');
-        // });
-        this.socket.on('close', () => {
-            this.socket?.removeAllListeners();
-            clearInterval(this.interval);
-            delete this.socket;
-            this.emit('disconnected');
-        });
-        this.socket.on('data', this.received.bind(this));
-        this.socket.connect({
-            host: this.ip,
-            port: this.port || 20554,
-        });
+        this.socket
+            .on('error', (e) => {
+                this.emit('error', e);
+            })
+            .on('connect', () => {
+                this.emit('connected');
+            })
+            .on('close', () => {
+                this.socket?.removeAllListeners();
+                this.socket?.destroy();
+                clearInterval(this.interval);
+                delete this.socket;
+                this.emit('disconnected');
+            })
+            .on('data', this.received.bind(this))
+            .connect({
+                host: this.ip,
+                port: this.port || 20554,
+            });
     }
 
     private received(d: Buffer): void {
@@ -81,7 +77,7 @@ export class JVC extends EventEmitter {
                 this.socket?.write(Buffer.from('PJREQ'));
             } else if (str.startsWith('PJACK')) {
                 this.acked = true;
-                this.working = false;
+                this.checking = undefined;
                 this.emit('ready');
                 this.interval = setInterval(this.checkWorking.bind(this), 1000);
             } else if (str.startsWith('PJNAK')) {
@@ -111,7 +107,6 @@ export class JVC extends EventEmitter {
         if (!this.socket) {
             await this.connect();
         }
-        this.working = true;
         this.logger.silly(`sending ${d.toString('hex')}`)
         this.socket?.write(d);
     }
@@ -121,7 +116,7 @@ export class JVC extends EventEmitter {
         if (header === 0x06) {
             const operation = message.slice(3, 5).toString()
             this.emit('ack', operation, message.slice(5).toString());
-            this.working = false;
+            this.checking = undefined;
             this.handleQueue();
         } else if (header === 0x40) {
             this.emit('response', message.slice(3, 5).toString(), message.slice(5).toString());
@@ -133,19 +128,25 @@ export class JVC extends EventEmitter {
 
     disconnect(): void {
         this.acked = false;
-        this.working = true;
+        this.checking = undefined;
         clearInterval(this.interval);
-        this.socket?.end();
         this.socket?.removeAllListeners();
+        this.socket?.destroy();
         delete this.socket;
     }
 
     private async checkWorking() {
-        await this.write(Buffer.concat([this.setPrefix, Buffer.from([0x00, 0x00]), this.commandPostfix]))
+        if (!this.checking) {
+            this.checking = Date.now();
+        } else if (this.checking + this.timeout > Date.now()) {
+            this.socket?.destroy();
+            return
+        }
+        await this.write(Buffer.concat([this.setPrefix, Buffer.from([0x00, 0x00]), this.commandPostfix]));
     }
 
     private async handleQueue() {
-        if (this.queue.length > 0 && !this.working) {
+        if (this.queue.length > 0 && !this.checking) {
             const next = this.queue.pop();
             this.logger.debug(`queue ${this.queue.length}`);
             if (next) await this.write(next);

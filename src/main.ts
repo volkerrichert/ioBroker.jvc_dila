@@ -10,7 +10,8 @@ import * as utils from '@iobroker/adapter-core';
 import { JVC } from './lib/JVC';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-function
-const noOp = () => {};
+const noOp = () => {
+};
 
 const POWER = {
     command: 'PW',
@@ -40,11 +41,11 @@ class JvcDila extends utils.Adapter {
      * Is called when databases are connected and adapter received configuration.
      */
     private async onReady(): Promise<void> {
-        this.setState('info.connection', {val: false, ack: true});
+        this.setState('info.connection', { val: false, ack: true });
         this.apiConnected = false;
         if (this.config.ip) {
             this.projector = new JVC(this.log, this.config.ip, this.config.port);
-            this.addListeners()
+            this.addListeners();
             this.connect();
             this.subscribeStates('*');
         } else {
@@ -53,7 +54,7 @@ class JvcDila extends utils.Adapter {
     }
 
     private onProjectorConnected() {
-        this.setState('info.connection', {val: true, ack: true});
+        this.setState('info.connection', { val: true, ack: true });
         this.apiConnected = true;
         if (this.timeout) {
             this.clearTimeout(this.timeout);
@@ -61,31 +62,38 @@ class JvcDila extends utils.Adapter {
         }
         this.log.debug('projector connected');
     }
+
     private onProjectorDisconnected() {
-        this.setState('info.connection', {val: false, ack: true});
+        this.setState('info.connection', { val: false, ack: true });
         this.apiConnected = false;
+        if (this.interval) this.clearInterval(this.interval);
         this.timeout = this.setTimeout(() => {
             this.connect();
-        }, 30*1000);
+        }, 30 * 1000);
         this.log.info('projector disconnected.');
     }
 
     private onProjectorError(e: any) {
-        if (e.code === 'ENETUNREACH' || e.code === 'EHOSTUNREACH') {
-            this.log.silly(`unable to connect to ${e.address}`);
-        } else {
-            this.log.error(`connection error ${e}`);
-            this.setState('info.connection', {val: false, ack: true});
-            this.apiConnected = false;
-            if (this.interval) this.clearInterval(this.interval);
-            if (this.timeout) this.clearTimeout(this.timeout);
+        switch (e.code) {
+            case 'ETIMEDOUT':
+            case 'ENETUNREACH':
+            case 'EHOSTUNREACH':
+                this.log.silly(`unable to connect to ${e.address}`);
+                break;
+            default:
+                this.log.error(`connection error ${e}`);
+                this.setState('info.connection', { val: false, ack: true });
+                this.apiConnected = false;
+                if (this.interval) this.clearInterval(this.interval);
+                if (this.timeout) this.clearTimeout(this.timeout);
         }
     }
 
     private onProjectorReady() {
-        this.log.info('projector is ready')
+        this.log.info('projector is ready');
         this.interval = this.setInterval(this.updater.bind(this), 5000);
     }
+
     private onAck(state: string) {
         this.log.silly(`ack for ${Buffer.from(state).toString('hex')} received`);
     }
@@ -94,19 +102,23 @@ class JvcDila extends utils.Adapter {
         switch (state) {
             case POWER.command:
                 this.setState('state', value, true);
-                this.setState('on', value === '1', true);
+                if (value === '1' || value === '0') {
+                    this.setState('on', value === '1', true);
+                }
                 break;
         }
         this.log.debug(`response for ${state} received: ${value}`);
     }
+
     private onUnknown() {
-        this.log.error('unable to handle response from projector')
+        this.log.error('unable to handle response from projector');
     }
+
     private addListeners() {
         if (this.projector) {
             this.projector.on('connected', this.onProjectorConnected.bind(this));
             this.projector.on('disconnected', this.onProjectorDisconnected.bind(this));
-            this.projector.on('error', this.onProjectorError.bind(this))
+            this.projector.on('error', this.onProjectorError.bind(this));
             this.projector.on('ready', this.onProjectorReady.bind(this));
             this.projector.on('ack', this.onAck.bind(this));
             this.projector.on('response', this.onResponse.bind(this));
@@ -123,7 +135,7 @@ class JvcDila extends utils.Adapter {
      */
     private onUnload(callback: () => void): void {
         try {
-            this.setState('info.connection', {val: false, ack: true});
+            this.setState('info.connection', { val: false, ack: true });
             this.apiConnected = false;
             if (this.interval) this.clearInterval(this.interval);
             if (this.timeout) this.clearTimeout(this.timeout);
@@ -166,7 +178,7 @@ class JvcDila extends utils.Adapter {
                 // The state was changed
                 this.log.info(`state ${id} changed: ${state.val} (ack = ${state.ack})`);
                 if (localId === 'on') {
-                    this.projector?.requestOperation(POWER.command, state.val === true ? '1': '0')
+                    this.projector?.requestOperation(POWER.command, state.val === true ? '1' : '0');
                 }
             } else {
                 this.log.error(`Unable to perform action for ${localId} - API is not connected (device not reachable?)`);
@@ -193,7 +205,7 @@ class JvcDila extends utils.Adapter {
     // }
 
     private updater() {
-        this.projector?.requestReference(POWER.command)
+        this.projector?.requestReference(POWER.command);
     }
 
     private removeNamespace(id: string) {

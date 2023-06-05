@@ -61,22 +61,28 @@ class JvcDila extends utils.Adapter {
   onProjectorDisconnected() {
     this.setState("info.connection", { val: false, ack: true });
     this.apiConnected = false;
+    if (this.interval)
+      this.clearInterval(this.interval);
     this.timeout = this.setTimeout(() => {
       this.connect();
     }, 30 * 1e3);
     this.log.info("projector disconnected.");
   }
   onProjectorError(e) {
-    if (e.code === "ENETUNREACH" || e.code === "EHOSTUNREACH") {
-      this.log.silly(`unable to connect to ${e.address}`);
-    } else {
-      this.log.error(`connection error ${e}`);
-      this.setState("info.connection", { val: false, ack: true });
-      this.apiConnected = false;
-      if (this.interval)
-        this.clearInterval(this.interval);
-      if (this.timeout)
-        this.clearTimeout(this.timeout);
+    switch (e.code) {
+      case "ETIMEDOUT":
+      case "ENETUNREACH":
+      case "EHOSTUNREACH":
+        this.log.silly(`unable to connect to ${e.address}`);
+        break;
+      default:
+        this.log.error(`connection error ${e}`);
+        this.setState("info.connection", { val: false, ack: true });
+        this.apiConnected = false;
+        if (this.interval)
+          this.clearInterval(this.interval);
+        if (this.timeout)
+          this.clearTimeout(this.timeout);
     }
   }
   onProjectorReady() {
@@ -90,7 +96,9 @@ class JvcDila extends utils.Adapter {
     switch (state) {
       case POWER.command:
         this.setState("state", value, true);
-        this.setState("on", value === "1", true);
+        if (value === "1" || value === "0") {
+          this.setState("on", value === "1", true);
+        }
         break;
     }
     this.log.debug(`response for ${state} received: ${value}`);
