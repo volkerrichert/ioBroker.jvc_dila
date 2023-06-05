@@ -78,6 +78,7 @@ class JvcDila extends utils.Adapter {
             case 'ETIMEDOUT':
             case 'ENETUNREACH':
             case 'EHOSTUNREACH':
+            case 'ECONNREFUSED':
                 this.log.silly(`unable to connect to ${e.address}`);
                 break;
             default:
