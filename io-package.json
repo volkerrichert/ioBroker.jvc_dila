@@ -106,7 +106,7 @@
                 "states": { "0":  "StandBy", "1":  "On", "2": "Cooling", "3":  "Reserved", "4":  "Emergency"},
                 "read": true,
                 "write": false,
-                "def": 0
+                "def": "0"
             },
             "native": {}
         },
