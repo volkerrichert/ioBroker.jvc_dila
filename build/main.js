@@ -67,7 +67,7 @@ class JvcDila extends utils.Adapter {
     this.log.info("projector disconnected.");
   }
   onProjectorError(e) {
-    if (e.code === "ENETUNREACH") {
+    if (e.code === "ENETUNREACH" || e.code === "EHOSTUNREACH") {
       this.log.silly(`unable to connect to ${e.address}`);
     } else {
       this.log.error(`connection error ${e}`);
