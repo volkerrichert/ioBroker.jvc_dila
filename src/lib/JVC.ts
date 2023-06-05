@@ -44,7 +44,7 @@ export class JVC extends EventEmitter {
     async connect(): Promise<void> {
         this.logger.info('Try to connect to JVC projector');
         this.socket = new net.Socket();
-        this.socket.setTimeout(this.timeout);
+        //this.socket.setTimeout(this.timeout);
         this.socket.on('error', (e) => {
             this.emit('error', e);
         });
