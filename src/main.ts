@@ -69,8 +69,8 @@ class JvcDila extends utils.Adapter {
         if (this.interval) this.clearInterval(this.interval);
         this.timeout = this.setTimeout(() => {
             this.connect();
-        }, 30 * 1000);
-        this.log.info('projector disconnected.');
+        }, 5 * 1000);
+        this.log.debug('projector disconnected.');
     }
 
     private onProjectorError(e: any) {

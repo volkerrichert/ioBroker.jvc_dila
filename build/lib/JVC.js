@@ -67,23 +67,33 @@ class JVC extends import_events.EventEmitter {
     await this.handleQueue();
   }
   async connect() {
-    this.logger.info("Try to connect to JVC projector");
+    this.logger.debug("Try to connect to JVC projector");
     this.socket = new import_net.default.Socket();
     this.socket.on("error", (e) => {
       this.emit("error", e);
     }).on("connect", () => {
       this.emit("connected");
     }).on("close", () => {
-      var _a, _b;
-      (_a = this.socket) == null ? void 0 : _a.removeAllListeners();
-      (_b = this.socket) == null ? void 0 : _b.destroy();
-      clearInterval(this.interval);
-      delete this.socket;
+      this.disconnect();
       this.emit("disconnected");
-    }).on("data", this.received.bind(this)).connect({
+    }).on("timeout", () => {
+      this.disconnect();
+    }).on("data", this.received.bind(this)).setTimeout(this.timeout, () => {
+      var _a;
+      return (_a = this.socket) == null ? void 0 : _a.destroy();
+    }).connect({
       host: this.ip,
       port: this.port || 20554
     });
+  }
+  disconnect() {
+    var _a, _b;
+    this.acked = false;
+    this.checking = void 0;
+    clearInterval(this.interval);
+    (_a = this.socket) == null ? void 0 : _a.destroy();
+    (_b = this.socket) == null ? void 0 : _b.removeAllListeners();
+    delete this.socket;
   }
   received(d) {
     var _a;
@@ -145,15 +155,6 @@ class JVC extends import_events.EventEmitter {
       this.logger.error("Failed to parse packet");
       this.emit("unknown", message);
     }
-  }
-  disconnect() {
-    var _a, _b;
-    this.acked = false;
-    this.checking = void 0;
-    clearInterval(this.interval);
-    (_a = this.socket) == null ? void 0 : _a.removeAllListeners();
-    (_b = this.socket) == null ? void 0 : _b.destroy();
-    delete this.socket;
   }
   async checkWorking() {
     var _a;

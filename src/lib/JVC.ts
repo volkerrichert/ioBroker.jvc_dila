@@ -34,14 +34,14 @@ export class JVC extends EventEmitter {
         await this.handleQueue();
     }
 
-    public async requestOperation(operation: string, value?: string ): Promise<void> {
+    public async requestOperation(operation: string, value?: string): Promise<void> {
         if (value) this.queue.push(Buffer.concat([this.setPrefix, Buffer.from(operation), Buffer.from(value), this.commandPostfix]));
         else this.queue.push(Buffer.concat([this.setPrefix, Buffer.from(operation), this.commandPostfix]));
         await this.handleQueue();
     }
 
     async connect(): Promise<void> {
-        this.logger.info('Try to connect to JVC projector');
+        this.logger.debug('Try to connect to JVC projector');
         this.socket = new net.Socket();
         this.socket
             .on('error', (e) => {
@@ -51,29 +51,38 @@ export class JVC extends EventEmitter {
                 this.emit('connected');
             })
             .on('close', () => {
-                this.socket?.removeAllListeners();
-                this.socket?.destroy();
-                clearInterval(this.interval);
-                delete this.socket;
+                this.disconnect();
                 this.emit('disconnected');
+            }).on('timeout', () => {
+                this.disconnect();
             })
             .on('data', this.received.bind(this))
+            .setTimeout(this.timeout, () => this.socket?.destroy())
             .connect({
                 host: this.ip,
                 port: this.port || 20554,
             });
     }
 
+    disconnect(): void {
+        this.acked = false;
+        this.checking = undefined;
+        clearInterval(this.interval);
+        this.socket?.destroy();
+        this.socket?.removeAllListeners();
+        delete this.socket;
+    }
+
     private received(d: Buffer): void {
         if (d.length === 0) {
             return;
         }
-        this.logger.silly('received ' + d.toString('hex'))
+        this.logger.silly('received ' + d.toString('hex'));
         if (!this.acked) {
             const str = d.toString('utf8');
             debugger;
             if (str.startsWith('PJ_OK')) {
-                this.logger.silly('received PJ_OK')
+                this.logger.silly('received PJ_OK');
                 this.socket?.write(Buffer.from('PJREQ'));
             } else if (str.startsWith('PJACK')) {
                 this.acked = true;
@@ -107,14 +116,14 @@ export class JVC extends EventEmitter {
         if (!this.socket) {
             await this.connect();
         }
-        this.logger.silly(`sending ${d.toString('hex')}`)
+        this.logger.silly(`sending ${d.toString('hex')}`);
         this.socket?.write(d);
     }
 
     private messageReceived(message: Buffer): void {
         const header = message[0];
         if (header === 0x06) {
-            const operation = message.slice(3, 5).toString()
+            const operation = message.slice(3, 5).toString();
             this.emit('ack', operation, message.slice(5).toString());
             this.checking = undefined;
             this.handleQueue();
@@ -126,21 +135,12 @@ export class JVC extends EventEmitter {
         }
     }
 
-    disconnect(): void {
-        this.acked = false;
-        this.checking = undefined;
-        clearInterval(this.interval);
-        this.socket?.removeAllListeners();
-        this.socket?.destroy();
-        delete this.socket;
-    }
-
     private async checkWorking() {
         if (!this.checking) {
             this.checking = Date.now();
         } else if (this.checking + this.timeout > Date.now()) {
             this.socket?.destroy();
-            return
+            return;
         }
         await this.write(Buffer.concat([this.setPrefix, Buffer.from([0x00, 0x00]), this.commandPostfix]));
     }
