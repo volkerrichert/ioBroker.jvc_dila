@@ -6,6 +6,8 @@ declare global {
         interface AdapterConfig {
             ip: string;
             port: number;
+            connectTimeout: number;
+            reconnectTime: number;
         }
     }
 }

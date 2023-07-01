@@ -65,7 +65,7 @@ class JvcDila extends utils.Adapter {
       this.clearInterval(this.interval);
     this.timeout = this.setTimeout(() => {
       this.connect();
-    }, 5 * 1e3);
+    }, this.config.reconnectTime);
     this.log.debug("projector disconnected.");
   }
   onProjectorError(e) {
@@ -102,7 +102,7 @@ class JvcDila extends utils.Adapter {
         }
         break;
     }
-    this.log.debug(`response for ${state} received: ${value}`);
+    this.log.silly(`response for ${state} received: ${value}`);
   }
   onUnknown() {
     this.log.error("unable to handle response from projector");

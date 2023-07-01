@@ -31,7 +31,7 @@ var import_events = require("events");
 var import_net = __toESM(require("net"));
 var import_timers = require("timers");
 class JVC extends import_events.EventEmitter {
-  constructor(logger, ip, port, timeout = 3e4) {
+  constructor(logger, ip, port, timeout = 5e3) {
     super();
     this.logger = logger;
     this.ip = ip;
@@ -55,7 +55,7 @@ class JVC extends import_events.EventEmitter {
     this.checking = void 0;
   }
   async requestReference(state) {
-    this.logger.debug(`request ${state}`);
+    this.logger.silly(`request ${state}`);
     this.queue.push(Buffer.concat([this.requestPrefix, Buffer.from(state), this.commandPostfix]));
     await this.handleQueue();
   }
@@ -70,27 +70,34 @@ class JVC extends import_events.EventEmitter {
     this.logger.debug("Try to connect to JVC projector");
     this.socket = new import_net.default.Socket();
     this.socket.on("error", (e) => {
+      clearTimeout(this.connectTimeout);
       this.emit("error", e);
     }).on("connect", () => {
+      clearTimeout(this.connectTimeout);
       this.emit("connected");
     }).on("close", () => {
+      clearTimeout(this.connectTimeout);
       this.disconnect();
       this.emit("disconnected");
     }).on("timeout", () => {
       this.disconnect();
-    }).on("data", this.received.bind(this)).setTimeout(this.timeout, () => {
-      var _a;
-      return (_a = this.socket) == null ? void 0 : _a.destroy();
-    }).connect({
+    }).on("data", this.received.bind(this)).connect({
       host: this.ip,
       port: this.port || 20554
     });
+    this.connectTimeout = setTimeout(() => {
+      var _a, _b;
+      if ((_a = this.socket) == null ? void 0 : _a.connecting) {
+        (_b = this.socket) == null ? void 0 : _b.destroy();
+      }
+    }, this.timeout);
   }
   disconnect() {
     var _a, _b;
     this.acked = false;
     this.checking = void 0;
     clearInterval(this.interval);
+    clearTimeout(this.connectTimeout);
     (_a = this.socket) == null ? void 0 : _a.destroy();
     (_b = this.socket) == null ? void 0 : _b.removeAllListeners();
     delete this.socket;
@@ -169,7 +176,7 @@ class JVC extends import_events.EventEmitter {
   async handleQueue() {
     if (this.queue.length > 0 && !this.checking) {
       const next = this.queue.pop();
-      this.logger.debug(`queue ${this.queue.length}`);
+      this.logger.silly(`queue ${this.queue.length}`);
       if (next)
         await this.write(next);
     }

@@ -69,7 +69,7 @@ class JvcDila extends utils.Adapter {
         if (this.interval) this.clearInterval(this.interval);
         this.timeout = this.setTimeout(() => {
             this.connect();
-        }, 5 * 1000);
+        }, this.config.reconnectTime);
         this.log.debug('projector disconnected.');
     }
 
@@ -108,7 +108,7 @@ class JvcDila extends utils.Adapter {
                 }
                 break;
         }
-        this.log.debug(`response for ${state} received: ${value}`);
+        this.log.silly(`response for ${state} received: ${value}`);
     }
 
     private onUnknown() {
@@ -154,21 +154,6 @@ class JvcDila extends utils.Adapter {
         }
     }
 
-    // If you need to react to object changes, uncomment the following block and the corresponding line in the constructor.
-    // You also need to subscribe to the objects with `this.subscribeObjects`, similar to `this.subscribeStates`.
-    // /**
-    //  * Is called if a subscribed object changes
-    //  */
-    // private onObjectChange(id: string, obj: ioBroker.Object | null | undefined): void {
-    //     if (obj) {
-    //         // The object was changed
-    //         this.log.info(`object ${id} changed: ${JSON.stringify(obj)}`);
-    //     } else {
-    //         // The object was deleted
-    //         this.log.info(`object ${id} deleted`);
-    //     }
-    // }
-
     /**
      * Is called if a subscribed state changes
      */
@@ -187,23 +172,6 @@ class JvcDila extends utils.Adapter {
 
         }
     }
-
-    // If you need to accept messages in your adapter, uncomment the following block and the corresponding line in the constructor.
-    // /**
-    //  * Some message was sent to this instance over message box. Used by email, pushover, text2speech, ...
-    //  * Using this method requires "common.messagebox" property to be set to true in io-package.json
-    //  */
-    // private onMessage(obj: ioBroker.Message): void {
-    //     if (typeof obj === 'object' && obj.message) {
-    //         if (obj.command === 'send') {
-    //             // e.g. send email or pushover or whatever
-    //             this.log.info('send command');
-
-    //             // Send response in callback if required
-    //             if (obj.callback) this.sendTo(obj.from, obj.command, 'Message received', obj.callback);
-    //         }
-    //     }
-    // }
 
     private updater() {
         this.projector?.requestReference(POWER.command);

@@ -17,6 +17,7 @@ export class JVC extends EventEmitter {
     private socket: net.Socket | undefined;
     private partial: Buffer | undefined;
     private interval: NodeJS.Timeout | undefined;
+    private connectTimeout: NodeJS.Timeout | undefined;
     private queue: Buffer[] = [];
     private checking: number | undefined = undefined;
 
@@ -24,12 +25,12 @@ export class JVC extends EventEmitter {
         private logger: ioBroker.Logger,
         private ip: string,
         private port: number,
-        private timeout: number = 30000) {
+        private timeout: number = 5000) {
         super();
     }
 
     public async requestReference(state: string): Promise<void> {
-        this.logger.debug(`request ${state}`);
+        this.logger.silly(`request ${state}`);
         this.queue.push(Buffer.concat([this.requestPrefix, Buffer.from(state), this.commandPostfix]));
         await this.handleQueue();
     }
@@ -45,29 +46,38 @@ export class JVC extends EventEmitter {
         this.socket = new net.Socket();
         this.socket
             .on('error', (e) => {
+                clearTimeout(this.connectTimeout);
                 this.emit('error', e);
             })
             .on('connect', () => {
+                clearTimeout(this.connectTimeout);
                 this.emit('connected');
             })
             .on('close', () => {
+                clearTimeout(this.connectTimeout);
                 this.disconnect();
                 this.emit('disconnected');
             }).on('timeout', () => {
                 this.disconnect();
             })
             .on('data', this.received.bind(this))
-            .setTimeout(this.timeout, () => this.socket?.destroy())
             .connect({
                 host: this.ip,
                 port: this.port || 20554,
             });
+
+        this.connectTimeout = setTimeout(() => {
+            if (this.socket?.connecting) {
+                this.socket?.destroy();
+            }
+        }, this.timeout)
     }
 
     disconnect(): void {
         this.acked = false;
         this.checking = undefined;
         clearInterval(this.interval);
+        clearTimeout(this.connectTimeout);
         this.socket?.destroy();
         this.socket?.removeAllListeners();
         delete this.socket;
@@ -148,7 +158,7 @@ export class JVC extends EventEmitter {
     private async handleQueue() {
         if (this.queue.length > 0 && !this.checking) {
             const next = this.queue.pop();
-            this.logger.debug(`queue ${this.queue.length}`);
+            this.logger.silly(`queue ${this.queue.length}`);
             if (next) await this.write(next);
         }
     }
